@@ -34,7 +34,7 @@ def inla_scale_model(Q, constr=None, eps=np.sqrt(np.finfo(float).eps)):
     for k in range(n_components):
         # i = g$cc$nodes[[k]]
         i = np.where(labels == k)[0]
-
+    
         # n = length(i)
         n = len(i)
 
@@ -52,14 +52,14 @@ def inla_scale_model(Q, constr=None, eps=np.sqrt(np.finfo(float).eps)):
         # } else {
         else:
             # cconstr = constr
-            cconstr = constr
+            cconstr = {'A': np.zeros((0, 0))} if constr is None else constr.copy()
 
             # if (!is.null(constr)) {
             if constr is not None:
                 ## the GMRFLib will automatically drop duplicated constraints; how convenient...
                 # cconstr$A = constr$A[, i, drop = FALSE]
                 cconstr['A'] = constr['A'][:, i]
-
+                
                 # eeps = eps
                 eeps = eps
 
