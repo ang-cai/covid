@@ -13,9 +13,9 @@ from scipy.sparse.linalg import inv as sparse_inv
 from scipy.sparse.csgraph import connected_components
 
 def inla_scale_model(Q, constr=None, eps=np.sqrt(np.finfo(float).eps)):
-    '''Copy of the inla.scale.model function in R. Found implementation online
-    at https://rdrr.io/github/inbo/INLA/src/R/scale.model.R. Comments are 
-    original R code.
+    '''Copy of the inla.scale.model function in R. Original implementation 
+    online at https://github.com/inbo/INLA/blob/master/R/scale.model.R. Comments 
+    are from original R code.
     
     Returns scaled matrix Q given contraints and target equal value'''
 
@@ -56,7 +56,8 @@ def inla_scale_model(Q, constr=None, eps=np.sqrt(np.finfo(float).eps)):
 
             # if (!is.null(constr)) {
             if constr is not None:
-                ## the GMRFLib will automatically drop duplicated constraints; how convenient...
+                ## the GMRFLib will automatically drop duplicated constraints; 
+                # how convenient...
                 # cconstr$A = constr$A[, i, drop = FALSE]
                 cconstr['A'] = constr['A'][:, i]
                 
@@ -68,7 +69,8 @@ def inla_scale_model(Q, constr=None, eps=np.sqrt(np.finfo(float).eps)):
                 # eeps = 0
                 eeps = 0
             
-            # res = inla.qinv(QQ + Diagonal(n) * max(diag(QQ)) * eeps, constr = cconstr)
+            # res = inla.qinv(QQ + Diagonal(n) * max(diag(QQ)) * eeps, 
+            # constr = cconstr)
             QQ = QQ + diags([np.max(np.diag(QQ)) * eeps], [0], shape=(n, n)).toarray()
             res = sparse_inv(csr_matrix(QQ)).toarray()
 
@@ -92,11 +94,14 @@ if __name__ == "__main__":
     neighbor = neighbor.set_index("zcta")
     aproximate_precision = neighbor.to_numpy()
     diagonal = np.diag(np.sum(aproximate_precision, axis=0))
-    aproximate_precision = np.add(diagonal, aproximate_precision)
+    aproximate_precision = np.subtract(diagonal, aproximate_precision)
 
     A = np.ones((1, aproximate_precision.shape[0])) 
+    e = 0
 
-    constr = {'A': A}
+    constr = {'A': A, 'e': e}
 
     scaled_result = inla_scale_model(aproximate_precision, constr)
-    print("Scaled Precision Matrix (Q):\n", scaled_result['Q'].toarray())
+
+    phi = .5
+    precision_zcta = 
