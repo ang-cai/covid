@@ -7,7 +7,6 @@ borders or is connected by bridge/tunnel to the location at that index, and
 '''
 import geopandas as gpd
 import pandas as pd
-from shapely.geometry import Polygon
 
 if __name__ == "__main__":
     nyc = gpd.read_file("nyc/nyc.shp")
