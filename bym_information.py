@@ -12,6 +12,7 @@ from scipy.sparse import csr_matrix, csc_matrix, diags
 from scipy.sparse.linalg import inv as sparse_inv
 from scipy.sparse.csgraph import connected_components
 from scipy.special import digamma, polygamma
+import matplotlib.pyplot as plt
 
 def inla_scale_model(Q, eps=np.sqrt(np.finfo(float).eps)):
     '''Copy of the inla.scale.model function in R. Original implementation 
@@ -80,27 +81,23 @@ def inla_scale_model(Q, eps=np.sqrt(np.finfo(float).eps)):
             # marg.var[i] = diag(res)/fac
             marg_var[i] = np.diag(res) / fac
         
+        Q_lil = Q.tolil()
         # Q[i, i] = QQ
         for idx, node in enumerate(i):
-            Q[node, i] = QQ[idx, :]
+            Q_lil[node, i] = QQ[idx, :]
+        Q = Q_lil.tocsr()
     
     # return (list(Q=Q, var = marg.var))
     return {"Q": Q, "var": marg_var}
 
-def bym_variance_covariance(design: list, spatial_correlation: list=None, 
-                             sd_log_posrate: list=None, precision_zcta: list=None):
+def bym_variance_covariance(design: list, spatial_correlation: list):
     '''Creates a variance covariance matrix using BYM model. Forumla: 
     Variance-covariance = (design' * spatial correlation * design)^-1
     
     Returns numpy array.
     '''
-    # Independent case
-    if not spatial_correlation:
-        variance_covariance = sd_log_posrate**2 / precision_zcta * np.linalg.inv(
-            np.matmul(design.T, design))
-    else:
-        variance_covariance = np.linalg.inv(np.matmul(
-            np.matmul(design.T, np.linalg.inv(spatial_correlation)), design))
+    variance_covariance = np.linalg.inv(np.matmul(
+        np.matmul(design.T, np.linalg.inv(spatial_correlation)), design))
 
     return variance_covariance
 
@@ -138,7 +135,7 @@ if __name__ == "__main__":
     design = np.stack(tuple(covariates), axis = -1)
 
     # Precision matrix
-    neighbor = pd.read_csv("bordering_neighbor.csv")
+    neighbor = pd.read_csv("bridged_neighbor.csv")
     neighbor = neighbor.set_index("zcta")
     aproximate_precision = neighbor.to_numpy()
     diagonal = np.diag(np.sum(aproximate_precision, axis=0))
@@ -152,6 +149,9 @@ if __name__ == "__main__":
     
     prec_zcta = 0.1/max(sd_log_posrate)**2
 
+    # Initialize graphic
+    figure, axis = plt.subplots(1, len(phi_values), figsize=(30, 6), sharey=True)
+
     # Information matrix
     for i in range(len(phi_values)):
         spatial_corre = (np.linalg.pinv(scaled_prec) * phi_values[i] + 
@@ -161,11 +161,11 @@ if __name__ == "__main__":
         sign, with_info = np.linalg.slogdet(variance_covar)
 
         information_gain = []
-        for i in range(n):
-            design_minus = np.delete(design, i, 0)
-            spatial_corre_minus = np.delete(np.delete(spatial_corre, i, 0), i, 1)
+        for j in range(n):
+            design_minus = np.delete(design, j, 0)
+            spatial_corre_minus = np.delete(np.delete(spatial_corre, j, 0), j, 1)
             variance_covar_minus = bym_variance_covariance(
-                design, sd_log_posrate=sd_log_posrate, precision_zcta=prec_zcta)
+                design_minus, spatial_corre_minus)
             sign, without_info = np.linalg.slogdet(variance_covar_minus)
             information_gain.append(-(with_info - without_info))
             
@@ -174,5 +174,20 @@ if __name__ == "__main__":
         information_gain_scaled = np.float_power(information_gain_scaled, .25)
 
         # Plot
-        
+        nyc["border_info"] = information_gain_scaled.tolist()
+        nyc.plot(column="border_info", ax=axis[i])
+        # use the geopandas package to plot the data with a color map based on new information gain column 
+        # choropleth maps is the formula
+        axis[i].get_xaxis().set_visible(False)
+        axis[i].get_yaxis().set_visible(False)
+        figure.subplots_adjust(wspace=0)
+        axis[i].set_title(f"BYM: phi={phi_values[i]}") 
+    
+    title = "NYC Information Gain of COVID Covariates with Bridged Neighbors"
+    figure.suptitle(title, fontsize="xx-large")
+
+    file = "bridged_information_matrix_nyc.png"
+    plt.savefig(file, bbox_inches="tight", pad_inches=0) 
+    plt.show()
+
 
