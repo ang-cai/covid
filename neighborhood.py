@@ -39,4 +39,4 @@ if __name__ == "__main__":
     print(zcat_df.loc["10305", "11209"])
 
     # Save to cvs
-    zcat_df.to_csv("connections_zcat.csv")
+    zcat_df.to_csv("bridged_neighbor.csv")

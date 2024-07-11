@@ -130,7 +130,7 @@ if __name__ == "__main__":
     
     for i in range(len(covariates)):
         covariates[i] = pd.to_numeric(covariates[i], errors="coerce").to_numpy()
-        np.nan_to_num(covariates[i], copy=False, nan=250000) # "25000+"
+        np.nan_to_num(covariates[i], copy=False, nan=250000) # "250000+"
         covariates[i] = (covariates[i] - np.mean(covariates[i])) / np.std(
             covariates[i])
         
@@ -142,13 +142,11 @@ if __name__ == "__main__":
     aproximate_precision = neighbor.to_numpy()
     diagonal = np.diag(np.sum(aproximate_precision, axis=0))
     aproximate_precision = np.subtract(diagonal, aproximate_precision)
-
     scaled_result = inla_scale_model(aproximate_precision)
     scaled_prec = scaled_result["Q"].toarray()
 
     log_posrate = digamma(cases + 1) - np.log(tests + 1)
     sd_log_posrate = np.sqrt(polygamma(1, cases + 1))
-    
     prec_zcta = 0.1/max(sd_log_posrate)**2
 
     # Initialize graphic
