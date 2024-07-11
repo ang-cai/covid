@@ -103,6 +103,8 @@ def bym_variance_covariance(design: list, spatial_correlation: list):
 
 if __name__ == "__main__":
     nyc = gpd.read_file("nyc/nyc.shp")
+    neighbor_type = "Bordering" 
+    # neighbor_type = "Bridged" 
 
     # Variables
     cases = nyc["nyc_case"].to_numpy()
@@ -135,7 +137,7 @@ if __name__ == "__main__":
     design = np.stack(tuple(covariates), axis = -1)
 
     # Precision matrix
-    neighbor = pd.read_csv("bordering_neighbor.csv")
+    neighbor = pd.read_csv(f"{neighbor_type}_neighbor.csv")
     neighbor = neighbor.set_index("zcta")
     aproximate_precision = neighbor.to_numpy()
     diagonal = np.diag(np.sum(aproximate_precision, axis=0))
@@ -150,7 +152,7 @@ if __name__ == "__main__":
     prec_zcta = 0.1/max(sd_log_posrate)**2
 
     # Initialize graphic
-    figure, axis = plt.subplots(1, len(phi_values), figsize=(30, 6), sharey=True)
+    figure, axis = plt.subplots(1, len(phi_values), figsize=(20, 6), sharey=True)
 
     # Information matrix
     for i in range(len(phi_values)):
@@ -184,10 +186,10 @@ if __name__ == "__main__":
         else:
             axis[i].set_title(f"BYM: phi={phi_values[i]}") 
     
-    title = "NYC Information Gain of COVID Covariates with Bordering Neighbors"
+    title = f"NYC Information Gain of COVID Covariates with {neighbor_type} Neighbors"
     figure.suptitle(title, fontsize="xx-large")
 
-    file = "bordering_information_matrix_nyc.png"
+    file = f"{neighbor_type}_information_gain_nyc.png"
     plt.savefig(file, bbox_inches="tight", pad_inches=0) 
     plt.show()
 
