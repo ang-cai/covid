@@ -135,7 +135,7 @@ if __name__ == "__main__":
     design = np.stack(tuple(covariates), axis = -1)
 
     # Precision matrix
-    neighbor = pd.read_csv("bridged_neighbor.csv")
+    neighbor = pd.read_csv("bordering_neighbor.csv")
     neighbor = neighbor.set_index("zcta")
     aproximate_precision = neighbor.to_numpy()
     diagonal = np.diag(np.sum(aproximate_precision, axis=0))
@@ -174,19 +174,20 @@ if __name__ == "__main__":
         information_gain_scaled = np.float_power(information_gain_scaled, .25)
 
         # Plot
-        nyc["border_info"] = information_gain_scaled.tolist()
-        nyc.plot(column="border_info", ax=axis[i])
-        # use the geopandas package to plot the data with a color map based on new information gain column 
-        # choropleth maps is the formula
+        nyc["info_gain"] = information_gain_scaled.tolist()
+        nyc.plot(column="info_gain", ax=axis[i])
         axis[i].get_xaxis().set_visible(False)
         axis[i].get_yaxis().set_visible(False)
         figure.subplots_adjust(wspace=0)
-        axis[i].set_title(f"BYM: phi={phi_values[i]}") 
+        if phi_values[i] == 0:
+            axis[i].set_title("Independent")
+        else:
+            axis[i].set_title(f"BYM: phi={phi_values[i]}") 
     
-    title = "NYC Information Gain of COVID Covariates with Bridged Neighbors"
+    title = "NYC Information Gain of COVID Covariates with Bordering Neighbors"
     figure.suptitle(title, fontsize="xx-large")
 
-    file = "bridged_information_matrix_nyc.png"
+    file = "bordering_information_matrix_nyc.png"
     plt.savefig(file, bbox_inches="tight", pad_inches=0) 
     plt.show()
 
