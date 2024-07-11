@@ -103,8 +103,8 @@ def bym_variance_covariance(design: list, spatial_correlation: list):
 
 if __name__ == "__main__":
     nyc = gpd.read_file("nyc/nyc.shp")
-    # neighbor_type = "Bordering" 
-    neighbor_type = "Bridged" 
+    neighbor_type = "Bordering" 
+    # neighbor_type = "Bridged" 
 
     # Variables
     cases = nyc["nyc_case"].to_numpy()
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     figure.suptitle(title, fontsize="xx-large")
 
     file = f"{neighbor_type}_information_gain_nyc.png"
-    plt.savefig(file, bbox_inches="tight", pad_inches=0) 
+    plt.savefig(file, bbox_inches="tight") 
     plt.show()
 
 
