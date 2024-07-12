@@ -102,9 +102,10 @@ def bym_variance_covariance(design: list, spatial_correlation: list):
     return variance_covariance
 
 if __name__ == "__main__":
+    # Shp file and neighbor
     nyc = gpd.read_file("nyc/nyc.shp")
-    neighbor_type = "Bordering" 
-    # neighbor_type = "Bridged" 
+    neighbor_types = ["Bordering", "Bridged", "exclude_manhattan_brooklyn"]
+    neighbor_type = neighbor_types[2]
 
     # Variables
     cases = nyc["nyc_case"].to_numpy()
@@ -124,16 +125,13 @@ if __name__ == "__main__":
     povert = nyc["nyc_povert"]
     uninsu = nyc["nyc_uninsu"]
     hosp_beds = nyc["hosp_beds"]
-
     covariates = [pop, adr, old, mp1f, white, gini, income, povert, uninsu, 
                   hosp_beds]
-    
     for i in range(len(covariates)):
         covariates[i] = pd.to_numeric(covariates[i], errors="coerce").to_numpy()
         np.nan_to_num(covariates[i], copy=False, nan=250000) # "250000+"
         covariates[i] = (covariates[i] - np.mean(covariates[i])) / np.std(
             covariates[i])
-        
     design = np.stack(tuple(covariates), axis = -1)
 
     # Precision matrix
@@ -145,6 +143,7 @@ if __name__ == "__main__":
     scaled_result = inla_scale_model(aproximate_precision)
     scaled_prec = scaled_result["Q"].toarray()
 
+    # Uncertainty
     log_posrate = digamma(cases + 1) - np.log(tests + 1)
     sd_log_posrate = np.sqrt(polygamma(1, cases + 1))
     prec_zcta = 0.1/max(sd_log_posrate)**2
@@ -154,13 +153,12 @@ if __name__ == "__main__":
 
     # Information matrix
     for i in range(len(phi_values)):
+        information_gain = []
         spatial_corre = (np.linalg.pinv(scaled_prec) * phi_values[i] + 
                          np.identity(n) * (1 - phi_values[i])) / prec_zcta
         spatial_corre = spatial_corre + np.diag(sd_log_posrate ** 2)
         variance_covar = bym_variance_covariance(design, spatial_corre)
         sign, with_info = np.linalg.slogdet(variance_covar)
-
-        information_gain = []
         for j in range(n):
             design_minus = np.delete(design, j, 0)
             spatial_corre_minus = np.delete(np.delete(spatial_corre, j, 0), j, 1)
@@ -168,7 +166,6 @@ if __name__ == "__main__":
                 design_minus, spatial_corre_minus)
             sign, without_info = np.linalg.slogdet(variance_covar_minus)
             information_gain.append(-(with_info - without_info))
-            
         information_gain_scaled = np.array(information_gain)
         information_gain_scaled = np.divide(information_gain_scaled, .125)
         information_gain_scaled = np.float_power(information_gain_scaled, .25)
@@ -184,7 +181,7 @@ if __name__ == "__main__":
         else:
             axis[i].set_title(f"BYM: phi={phi_values[i]}") 
     
-    title = f"NYC Information Gain of COVID Covariates with {neighbor_type} Neighbors"
+    title = f"NYC Information Gain of COVID Covariates {neighbor_type} Neighbors"
     figure.suptitle(title, fontsize="xx-large")
 
     file = f"{neighbor_type}_information_gain_nyc.png"
