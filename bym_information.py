@@ -137,10 +137,10 @@ if __name__ == "__main__":
     # Precision matrix
     neighbor = pd.read_csv(f"{neighbor_type}_neighbor.csv")
     neighbor = neighbor.set_index("zcta")
-    aproximate_precision = neighbor.to_numpy()
-    diagonal = np.diag(np.sum(aproximate_precision, axis=0))
-    aproximate_precision = np.subtract(diagonal, aproximate_precision)
-    scaled_result = inla_scale_model(aproximate_precision)
+    approximate_precision = neighbor.to_numpy()
+    diagonal = np.diag(np.sum(approximate_precision, axis=0))
+    approximate_precision = np.subtract(diagonal, approximate_precision)
+    scaled_result = inla_scale_model(approximate_precision)
     scaled_prec = scaled_result["Q"].toarray()
 
     # Uncertainty
